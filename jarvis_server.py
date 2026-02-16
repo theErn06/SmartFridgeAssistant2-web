@@ -8,9 +8,18 @@ from flask_cors import CORS
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
+# Enable CORS for all domains
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# ================= CONFIG =================
+# ================= CRITICAL FIX: FORCE HEADERS =================
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+# ===============================================================
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(SCRIPT_DIR, "fridge2_5.json")
 OLLAMA_URL = "http://localhost:11434/api/chat"
@@ -21,7 +30,6 @@ SHELF_LIFE_RULES = {
     "fruits": 7, "grains": 14, "pantry": 365, "processed": 7, "non-food": 0
 }
 
-# ================= HELPER FUNCTIONS =================
 def convert_word_to_num(text):
     word_to_num = {
         "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
@@ -34,9 +42,7 @@ def convert_word_to_num(text):
     return text
 
 def clean_item_name(name):
-    """Removes 'pieces of', 'bags of', etc. from item names."""
     name = name.lower().strip()
-    # Regex to remove common unit prefixes
     name = re.sub(r'^\s*(?:pieces?|bags?|packs?|cartons?|bottles?|cans?|units?|cups?|kg?|g?|lbs?)\s+of\s+', '', name, flags=re.IGNORECASE)
     return name.strip()
 
@@ -66,11 +72,8 @@ def get_batch_status(expiry):
     except: return "N/A"
 
 def update_fridge(item, delta, unit="pieces", category=None):
-    # FIX: Clean the name before processing
     item = clean_item_name(item)
-    
     fridge = load_fridge()
-    
     if item not in fridge:
         final_category = category if category else "general"
         fridge[item] = {"item_name": item, "unit": unit, "category": final_category, "batches": []}
@@ -78,7 +81,6 @@ def update_fridge(item, delta, unit="pieces", category=None):
         final_category = fridge[item].get("category", "general")
     
     entry = fridge[item]
-    
     if delta > 0:
         new_expiry = calculate_expiry(final_category)
         merged = False
@@ -89,10 +91,7 @@ def update_fridge(item, delta, unit="pieces", category=None):
                 merged = True
                 break
         if not merged:
-            entry["batches"].append({
-                "qty": delta, "expiry": new_expiry, "status": get_batch_status(new_expiry)
-            })
-
+            entry["batches"].append({"qty": delta, "expiry": new_expiry, "status": get_batch_status(new_expiry)})
     elif delta < 0:
         remove_qty = -delta
         entry["batches"].sort(key=lambda b: b["expiry"] if b["expiry"] != "N/A" else "9999/99/99")
@@ -109,7 +108,6 @@ def update_fridge(item, delta, unit="pieces", category=None):
                 keep_batches.append(batch)
         entry["batches"] = keep_batches
         if not entry["batches"]: fridge.pop(item, None)
-
     save_fridge(fridge)
 
 def get_fridge_text():
@@ -129,32 +127,23 @@ def get_item_count(item):
         return f"You have {total} {fridge[item]['unit']} of {item}."
     return f"You don't have any {item}."
 
-# --- PARSING ---
 def parse_regex_fallback(text):
     text = text.lower()
     actions = []
-    
-    # Pattern: "add 5 apples"
     add_match = re.search(r"(add|buy|get|insert)\s+(\d+)\s+(.*)", text)
     if add_match:
         qty = int(add_match.group(2))
         raw_item = add_match.group(3).strip()
-        if raw_item.endswith("s"): raw_item = raw_item[:-1] # Remove plural 's'
-        
-        # Clean "pieces of"
+        if raw_item.endswith("s"): raw_item = raw_item[:-1] 
         item = clean_item_name(raw_item)
-        
         actions.append({"action": "add", "item": item, "qty": qty})
         return actions
-
     remove_match = re.search(r"(remove|eat|delete|take)\s+(\d+)\s+(.*)", text)
     if remove_match:
         qty = int(remove_match.group(2))
         raw_item = remove_match.group(3).strip()
         if raw_item.endswith("s"): raw_item = raw_item[:-1]
-        
         item = clean_item_name(raw_item)
-        
         actions.append({"action": "remove", "item": item, "qty": qty})
         return actions
     return []
@@ -176,47 +165,41 @@ def ask_ollama(user_text, context):
     except: pass
     return []
 
-# ================= WEB ENDPOINT =================
-@app.route('/chat', methods=['POST'])
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({"status": "Online", "message": "Jarvis is ready."})
+
+@app.route('/chat', methods=['POST', 'GET'])
 def chat():
+    if request.method == 'GET':
+        return jsonify({"status": "Ready", "message": "Send POST to chat."})
     try:
         data = request.json
         raw_text = data.get("message", "")
         user_text = convert_word_to_num(raw_text)
-        print(f"WEB USER: {raw_text} -> {user_text}")
-
+        print(f"WEB USER: {user_text}")
         fridge_ctx = get_fridge_text()
-        
         actions = ask_ollama(user_text, fridge_ctx)
-        if not actions:
-            actions = parse_regex_fallback(user_text)
-
+        if not actions: actions = parse_regex_fallback(user_text)
         response_text = ""
-        
         if not actions:
-            if "list" in user_text.lower():
-                 response_text = f"Here is what you have: {fridge_ctx}"
-            else:
-                 response_text = "I didn't quite catch that. Try saying 'Add 1 apple'."
-        
+            if "list" in user_text.lower(): response_text = f"Here is what you have: {fridge_ctx}"
+            else: response_text = "I didn't quite catch that."
         for a in actions:
             action = a.get("action")
-            item = clean_item_name(a.get("item")) # Double clean
+            item = clean_item_name(a.get("item"))
             qty = a.get("count") or a.get("qty") or 1
-            
             if action in ["add", "at"]:
                 update_fridge(item, qty, category=None)
-                response_text = f"Added {qty} {item} to inventory."
+                response_text = f"Added {qty} {item}."
             elif action == "remove":
                 update_fridge(item, -qty)
-                response_text = f"Removed {qty} {item} from inventory."
+                response_text = f"Removed {qty} {item}."
             elif action == "lookup":
                 response_text = get_item_count(item)
             elif action == "list":
                 response_text = f"Inventory: {fridge_ctx}"
-
         return jsonify({"response": response_text})
-
     except Exception as e:
         print(f"ERROR: {e}")
         return jsonify({"response": "System error."}), 500
