@@ -1,5 +1,10 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbwG462ao0VUGfTOuxNcnYm-BDuNorNLtjFS-b5FY6jo4vzkdFvNv_2CRipYBoYp5_hhvw/exec'; 
-const JARVIS_URL = 'http://localhost:5000/chat';
+
+// ==========================================================================================
+// ⚠️ CHANGE THIS LINE! Replace 'localhost' with your PC's IPv4 Address (e.g., 192.168.0.105)
+// ==========================================================================================
+const JARVIS_URL = 'http://192.168.1.13:5000/chat'; 
+// ^^^ Example: 'http://192.168.1.15:5000/chat'
 
 let currentUser = null;
 let currentPass = null;
@@ -17,11 +22,9 @@ $(document).ready(function() {
         currentPass = savedPass;
         toggleLogoutButton(true);
         
-        // FIX 1: Only hide AUTH cards, NOT the About Us card
+        // Hide AUTH cards only
         $('.auth-card').hide(); 
 
-        // Only switch views if we are on the main dashboard (index.html)
-        // We check if the 'inventory-section' exists to know we are on the main page
         if ($('#inventory-section').length > 0) {
             if (lastView === 'jarvis-view') {
                 showView('jarvis-view');
@@ -95,6 +98,7 @@ function addChatMsg(text, isUser) {
 }
 
 function speakText(text) {
+    // Note: Speech Synthesis works best on Chrome/Safari mobile
     if ('speechSynthesis' in window) {
         let utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1;
@@ -120,7 +124,7 @@ function startDictation() {
         recognition.onerror = function(e) { $('.mic-btn').removeClass('active'); };
         recognition.onend = function() { $('.mic-btn').removeClass('active'); };
     } else {
-        alert("Voice input not supported. Try Chrome.");
+        alert("Voice input not supported on this browser. Try Chrome Mobile.");
     }
 }
 
@@ -131,6 +135,7 @@ function sendJarvisMessage() {
     addChatMsg(text, true);
     $('#chat-input').val('');
 
+    // Use the updated IP Address URL here
     fetch(JARVIS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,7 +153,7 @@ function sendJarvisMessage() {
     })
     .catch(error => {
         console.error("Jarvis Error:", error);
-        addChatMsg("Error: Connection failed. Is 'king.py' running?", false);
+        addChatMsg("Error: Connection Failed. \n1. Check PC IP in script.js \n2. Check if king.py is running \n3. Check Windows Firewall.", false);
     });
 }
 
@@ -167,7 +172,6 @@ function showView(viewId) {
     $('#sidebar').removeClass('open');
     $('.overlay').removeClass('active');
     
-    // Hide ONLY the specific dashboard views
     $('.card.auth-card, .inventory-wrapper, .jarvis-wrapper').hide();
     
     $('#' + viewId).fadeIn();
@@ -240,7 +244,7 @@ function handleAuth(action) {
                     localStorage.setItem('fridgePass', currentPass);
                     localStorage.setItem('lastView', 'inventory-section');
 
-                    $('.auth-card').hide(); // Only hide login/signup cards
+                    $('.auth-card').hide(); 
                     $('#inventory-section').fadeIn();
                     toggleLogoutButton(true);
                     loadTable();
@@ -260,7 +264,6 @@ function handleAuth(action) {
 }
 
 function loadTable() {
-    // FIX 2: Check if table exists before trying to load it (prevents errors on About Us page)
     if ($('#inventory').length === 0) return;
 
     if ($.fn.DataTable.isDataTable('#inventory')) {
