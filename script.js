@@ -1,10 +1,8 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbwG462ao0VUGfTOuxNcnYm-BDuNorNLtjFS-b5FY6jo4vzkdFvNv_2CRipYBoYp5_hhvw/exec'; 
 
-// ==========================================================================================
-// ⚠️ CHANGE THIS LINE! Replace 'localhost' with your PC's IPv4 Address (e.g., 192.168.0.105)
-// ==========================================================================================
-const JARVIS_URL = 'http://192.168.1.13:5000/chat'; 
-// ^^^ Example: 'http://192.168.1.15:5000/chat'
+// King.py will auto-update this line.
+// EXAMPLE: http://192.168.1.9:5000/chat
+const JARVIS_URL = 'http://192.168.1.13:5000/chat';
 
 let currentUser = null;
 let currentPass = null;
@@ -13,16 +11,15 @@ $(document).ready(function() {
     toggleLogoutButton(false);
 
     // 1. AUTO-LOGIN
-    const savedUser = localStorage.getItem('fridgeUser');
-    const savedPass = localStorage.getItem('fridgePass');
-    const lastView = localStorage.getItem('lastView');
+    var savedUser = localStorage.getItem('fridgeUser');
+    var savedPass = localStorage.getItem('fridgePass');
+    var lastView = localStorage.getItem('lastView');
     
     if (savedUser && savedPass) {
         currentUser = savedUser;
         currentPass = savedPass;
         toggleLogoutButton(true);
         
-        // Hide AUTH cards only
         $('.auth-card').hide(); 
 
         if ($('#inventory-section').length > 0) {
@@ -36,16 +33,18 @@ $(document).ready(function() {
         }
     }
 
-    // 3. EVENT BINDINGS
+    // 2. EVENT BINDINGS
     $('#mobile-search-input').on('keyup', function() {
-        if ($.fn.DataTable.isDataTable('#inventory')) $('#inventory').DataTable().search(this.value).draw();
+        if ($.fn.DataTable.isDataTable('#inventory')) {
+            $('#inventory').DataTable().search(this.value).draw();
+        }
     });
 
     $('#mobile-sort-select').on('change', function() {
         if ($.fn.DataTable.isDataTable('#inventory')) {
-            let val = $(this).val();
-            let [col, dir] = val.split('_');
-            $('#inventory').DataTable().order([parseInt(col), dir]).draw();
+            var val = $(this).val();
+            var parts = val.split('_');
+            $('#inventory').DataTable().order([parseInt(parts[0]), parts[1]]).draw();
         }
     });
 
@@ -57,58 +56,53 @@ $(document).ready(function() {
     });
 });
 
-// --- CHAT HISTORY PERSISTENCE ---
+// --- CHAT HISTORY ---
 function saveChatHistory() {
-    const history = $('#chat-history').html();
+    var history = $('#chat-history').html();
     localStorage.setItem('jarvisChatHistory', history);
 }
 
 function loadChatHistory() {
-    const history = localStorage.getItem('jarvisChatHistory');
+    var history = localStorage.getItem('jarvisChatHistory');
     if (history && $('#chat-history').length > 0) {
         $('#chat-history').html(history);
-        $('#chat-history').scrollTop($('#chat-history')[0].scrollHeight);
+        var chatBox = $('#chat-history')[0];
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 }
 
 function clearChatHistory() {
     if(confirm("Clear chat history?")) {
-        $('#chat-history').html(`
-            <div class="chat-msg bot-msg">
-                <img src="jarvis-icon.jpg" class="chat-avatar">
-                <div class="msg-content">History cleared. How can I help?</div>
-            </div>
-        `);
+        $('#chat-history').html('<div class="chat-msg bot-msg"><img src="jarvis-icon.jpg" class="chat-avatar"><div class="msg-content">History cleared. How can I help?</div></div>');
         localStorage.removeItem('jarvisChatHistory');
     }
 }
 
 // --- JARVIS LOGIC ---
 function addChatMsg(text, isUser) {
-    let cls = isUser ? 'user-msg' : 'bot-msg';
-    let html = `
-        <div class="chat-msg ${cls}">
-            ${!isUser ? '<img src="jarvis-icon.jpg" class="chat-avatar">' : ''}
-            <div class="msg-content">${text}</div>
-        </div>
-    `;
+    var cls = isUser ? 'user-msg' : 'bot-msg';
+    var imgHtml = !isUser ? '<img src="jarvis-icon.jpg" class="chat-avatar">' : '';
+    
+    var html = '<div class="chat-msg ' + cls + '">' + imgHtml + '<div class="msg-content">' + text + '</div></div>';
+    
     $('#chat-history').append(html);
-    $('#chat-history').scrollTop($('#chat-history')[0].scrollHeight);
+    var chatBox = $('#chat-history')[0];
+    chatBox.scrollTop = chatBox.scrollHeight;
+    
     saveChatHistory();
 }
 
 function speakText(text) {
-    // Note: Speech Synthesis works best on Chrome/Safari mobile
     if ('speechSynthesis' in window) {
-        let utterance = new SpeechSynthesisUtterance(text);
+        var utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1;
         window.speechSynthesis.speak(utterance);
     }
 }
 
 function startDictation() {
-    if (window.hasOwnProperty('webkitSpeechRecognition')) {
-        let recognition = new webkitSpeechRecognition();
+    if ('webkitSpeechRecognition' in window) {
+        var recognition = new webkitSpeechRecognition();
         $('.mic-btn').addClass('active');
         recognition.continuous = false;
         recognition.interimResults = false;
@@ -117,33 +111,33 @@ function startDictation() {
 
         recognition.onresult = function(e) {
             $('.mic-btn').removeClass('active');
-            let text = e.results[0][0].transcript;
+            var text = e.results[0][0].transcript;
             $('#chat-input').val(text);
             sendJarvisMessage();
         };
         recognition.onerror = function(e) { $('.mic-btn').removeClass('active'); };
         recognition.onend = function() { $('.mic-btn').removeClass('active'); };
     } else {
-        alert("Voice input not supported on this browser. Try Chrome Mobile.");
+        alert("Voice input not supported on this browser.");
     }
 }
 
 function sendJarvisMessage() {
-    let text = $('#chat-input').val().trim();
+    var text = $('#chat-input').val().trim();
     if(!text) return;
 
     addChatMsg(text, true);
     $('#chat-input').val('');
 
-    // Use the updated IP Address URL here
+    // SIMPLE FETCH (Best for local networks)
     fetch(JARVIS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text })
     })
-    .then(response => response.json())
-    .then(data => {
-        let reply = data.response || "I couldn't process that.";
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        var reply = data.response || "I couldn't process that.";
         addChatMsg(reply, false);
         speakText(reply);
         
@@ -151,9 +145,9 @@ function sendJarvisMessage() {
              $('#inventory').DataTable().ajax.reload(null, false);
         }
     })
-    .catch(error => {
+    .catch(function(error) {
         console.error("Jarvis Error:", error);
-        addChatMsg("Error: Connection Failed. \n1. Check PC IP in script.js \n2. Check if king.py is running \n3. Check Windows Firewall.", false);
+        addChatMsg("Error: Connection Failed. Check King.py console.", false);
     });
 }
 
@@ -179,10 +173,13 @@ function showView(viewId) {
     $('.message').text('').removeClass('error');
     if(viewId !== 'jarvis-view') $('input').val(''); 
 
+    // Safe table resize
     if (viewId === 'inventory-section') {
         setTimeout(function() {
             if ($.fn.DataTable.isDataTable('#inventory')) {
-                $('#inventory').DataTable().columns.adjust().responsive?.recalc();
+                var table = $('#inventory').DataTable();
+                table.columns.adjust();
+                if(table.responsive) { table.responsive.recalc(); }
             }
         }, 200); 
     }
@@ -198,8 +195,8 @@ function toggleLogoutButton(show) {
 }
 
 function handleAuth(action) {
-    let payload = { action: action };
-    let msgBox, btn;
+    var payload = { action: action };
+    var msgBox, btn;
 
     if (action === 'login') {
         payload.username = $('#login-user').val();
@@ -227,13 +224,9 @@ function handleAuth(action) {
         success: function(response) {
             btn.prop('disabled', false).find('.btn-text').show().end().find('.spinner').hide();
             
-            let res;
-            try {
-                res = (typeof response === "object") ? response : JSON.parse(response);
-            } catch (e) {
-                msgBox.addClass('error').text("Invalid server response.");
-                return;
-            }
+            var res;
+            try { res = (typeof response === "object") ? response : JSON.parse(response); } 
+            catch (e) { msgBox.addClass('error').text("Invalid server response."); return; }
 
             if (res.status === 'success') {
                 if (action === 'login' || action === 'signup') {
@@ -278,7 +271,7 @@ function loadTable() {
         language: { search: "", searchPlaceholder: "Search items..." },
         
         createdRow: function (row, data, dataIndex) {
-            const labels = ['Item', 'Qty', 'Unit', 'Category', 'Expiry', 'Status', 'Days Left'];
+            var labels = ['Item', 'Qty', 'Unit', 'Category', 'Expiry', 'Status', 'Days Left'];
             $('td', row).each(function(i) {
                 $(this).attr('data-label', labels[i]);
             });
@@ -295,7 +288,7 @@ function loadTable() {
                     password: currentPass
                 }),
                 success: function (response) {
-                    let json;
+                    var json;
                     try { json = (typeof response === "object") ? response : JSON.parse(response); } catch(e) { json = { data: [] }; }
                     if (json.error) console.error("Table Sync Error:", json.error);
                     else callback({ data: json.data || [] });
@@ -312,8 +305,8 @@ function loadTable() {
                 defaultContent: "-",
                 render: function (data) {
                     if (!data || data === "-") return "-";
-                    let text = String(data); 
-                    return `<strong>${text.charAt(0).toUpperCase() + text.slice(1)}</strong>`;
+                    var text = String(data); 
+                    return '<strong>' + text.charAt(0).toUpperCase() + text.slice(1) + '</strong>';
                 }
             },
             { data: 'qty', defaultContent: "0" },
@@ -331,11 +324,11 @@ function loadTable() {
                 data: 'status', 
                 defaultContent: "N/A",
                 render: function(data) {
-                    let color = '#333';
+                    var color = '#333';
                     if(data === 'Expired') color = '#e74c3c';
                     else if(data === 'Good') color = '#27ae60';
                     else if(data === 'Expiring Soon') color = '#f39c12';
-                    return `<span style="color:${color}; font-weight:600;">${data}</span>`;
+                    return '<span style="color:' + color + '; font-weight:600;">' + data + '</span>';
                 }
             },
             { data: 'days_left', defaultContent: "N/A" } 
