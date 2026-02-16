@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Fridge Inventory System</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      .clear-chat-btn {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+      .clear-chat-btn:hover {
+        color: #e74c3c;
+      }
+      .jarvis-header {
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="overlay" onclick="toggleMenu()"></div>
+
+    <header class="mobile-header">
+      <button class="menu-btn" onclick="toggleMenu()">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <span class="logo-text">Jarvis Inventory</span>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-area">
+          <i class="fa-solid fa-bars nav-text menu-hamburger"></i>
+          <span class="nav-text header-text">Menu</span>
+        </div>
+        <button class="close-btn" onclick="toggleMenu()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+
+      <ul class="nav-links">
+        <li>
+          <a href="#" class="nav-item" onclick="showView('jarvis-view')">
+            <span class="icon-box"
+              ><img
+                src="jarvis-icon.jpg"
+                alt="Jarvis"
+                class="custom-icon"
+                width="24"
+                height="24"
+            /></span>
+            <span class="nav-text">Jarvis</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="nav-item" onclick="showView('inventory-section')">
+            <span class="icon-box"
+              ><img
+                src="guide-icon.jpg"
+                alt="Guide"
+                class="custom-icon"
+                width="24"
+                height="24"
+            /></span>
+            <span class="nav-text">Inventory</span>
+          </a>
+        </li>
+        <li>
+          <a href="aboutus.html" class="nav-item">
+            <span class="icon-box">
+              <i class="fa-solid fa-circle-info nav-icon"></i>
+            </span>
+            <span class="nav-text">About Us</span>
+          </a>
+        </li>
+      </ul>
+
+      <div class="bottom-section" id="logout-section" style="display: none">
+        <a href="#" onclick="logout()" class="nav-item logout-item">
+          <span class="icon-box"
+            ><i class="fa-solid fa-right-from-bracket nav-icon"></i
+          ></span>
+          <span class="nav-text">Log Out</span>
+        </a>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div id="login-view" class="card auth-card">
+        <h2>Welcome Back</h2>
+        <p class="subtitle">Please login to your dashboard</p>
+        <div class="input-group">
+          <i class="fa-solid fa-user input-icon"></i
+          ><input type="text" id="login-user" placeholder="Username" />
+        </div>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i
+          ><input type="password" id="login-pass" placeholder="Password" />
+        </div>
+        <button
+          onclick="handleAuth('login')"
+          id="btn-login"
+          class="primary-btn"
+        >
+          <span class="btn-text">Login</span>
+          <div class="spinner"></div>
+        </button>
+        <p id="login-msg" class="message"></p>
+        <div class="auth-actions">
+          <span onclick="prepareChangePass()">Change Password</span>
+          <span onclick="showView('signup-view')">Create Account</span>
+        </div>
+      </div>
+
+      <div id="signup-view" class="card auth-card" style="display: none">
+        <h2>Create Account</h2>
+        <div class="input-group">
+          <i class="fa-solid fa-user input-icon"></i
+          ><input type="text" id="signup-user" placeholder="Choose Username" />
+        </div>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i
+          ><input
+            type="password"
+            id="signup-pass"
+            placeholder="Choose Password"
+          />
+        </div>
+        <button
+          onclick="handleAuth('signup')"
+          id="btn-signup"
+          class="primary-btn"
+        >
+          <span class="btn-text">Sign Up</span>
+          <div class="spinner"></div>
+        </button>
+        <button class="text-btn" onclick="showView('login-view')">
+          Back to Login
+        </button>
+        <p id="signup-msg" class="message"></p>
+      </div>
+
+      <div id="change-pass-view" class="card auth-card" style="display: none">
+        <h2>Update Password</h2>
+        <div class="input-group">
+          <i class="fa-solid fa-user input-icon"></i
+          ><input type="text" id="cp-user" placeholder="Username" />
+        </div>
+        <div class="input-group">
+          <i class="fa-solid fa-key input-icon"></i
+          ><input type="password" id="cp-old" placeholder="Old Password" />
+        </div>
+        <div class="input-group">
+          <i class="fa-solid fa-lock input-icon"></i
+          ><input type="password" id="cp-new" placeholder="New Password" />
+        </div>
+        <button
+          onclick="handleAuth('change_password')"
+          id="btn-cp"
+          class="primary-btn"
+        >
+          <span class="btn-text">Update</span>
+          <div class="spinner"></div>
+        </button>
+        <button class="text-btn" onclick="showView('login-view')">
+          Cancel
+        </button>
+        <p id="cp-msg" class="message"></p>
+      </div>
+
+      <div id="jarvis-view" class="jarvis-wrapper" style="display: none">
+        <div class="jarvis-header">
+          <h1 class="page-title">Jarvis Assistant</h1>
+          <button
+            class="clear-chat-btn"
+            onclick="clearChatHistory()"
+            title="Clear History"
+          >
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+        <div class="chat-container">
+          <div id="chat-history" class="chat-history">
+            <div class="chat-msg bot-msg">
+              <img src="jarvis-icon.jpg" class="chat-avatar" />
+              <div class="msg-content">
+                Hello sir. How can I help you with the fridge today?
+              </div>
+            </div>
+          </div>
+          <div class="chat-controls">
+            <input type="text" id="chat-input" placeholder="Type or speak..." />
+            <button
+              type="button"
+              class="icon-btn mic-btn"
+              onclick="startDictation()"
+            >
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button
+              type="button"
+              class="icon-btn send-btn"
+              onclick="sendJarvisMessage()"
+            >
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="inventory-section" class="inventory-wrapper">
+        <h1 class="page-title">My Inventory</h1>
+        <div class="mobile-controls">
+          <div class="mobile-search-box">
+            <i class="fa-solid fa-search"></i>
+            <input
+              type="text"
+              id="mobile-search-input"
+              placeholder="Search..."
+            />
+          </div>
+          <div class="mobile-sort-box">
+            <select id="mobile-sort-select">
+              <option value="0_asc">Name (A-Z)</option>
+              <option value="4_asc">Expiry (Oldest)</option>
+              <option value="4_desc">Expiry (Newest)</option>
+              <option value="6_asc">Days Left</option>
+            </select>
+          </div>
+        </div>
+        <table id="inventory" class="display" style="width: 100%">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Unit</th>
+              <th>Category</th>
+              <th>Expiry</th>
+              <th>Status</th>
+              <th>Days Left</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+{
+  "apple": {
+    "item_name": "apple",
+    "unit": "pieces",
+    "category": "fruits",
+    "batches": [
+      {
+        "qty": 19,
+        "expiry": "2026/02/17",
+        "status": "Expired Soon"
+      },
+      {
+        "qty": 21,
+        "expiry": "2026/02/21",
+        "status": "Good to Eat"
+      },
+      {
+        "qty": 7,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  },
+  "banana": {
+    "item_name": "banana",
+    "unit": "pieces",
+    "category": "fruits",
+    "batches": [
+      {
+        "qty": 1,
+        "expiry": "2026/02/20",
+        "status": "Good to Eat"
+      },
+      {
+        "qty": 4,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  },
+  "strawberry": {
+    "item_name": "strawberry",
+    "unit": "pieces",
+    "category": "fruits",
+    "batches": [
+      {
+        "qty": 10,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  },
+  "berry": {
+    "item_name": "berry",
+    "unit": "pieces",
+    "category": "fruits",
+    "batches": [
+      {
+        "qty": 1,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  },
+  "watermelon": {
+    "item_name": "watermelon",
+    "unit": "pieces",
+    "category": "general",
+    "batches": [
+      {
+        "qty": 3,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  },
+  "bread": {
+    "item_name": "bread",
+    "unit": "pieces",
+    "category": "general",
+    "batches": [
+      {
+        "qty": 4,
+        "expiry": "2026/02/23",
+        "status": "Good to Eat"
+      }
+    ]
+  }
+}
